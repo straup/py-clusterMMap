@@ -1,3 +1,59 @@
-WRITE ME, PLEASE.
-
 See also: http://www.aaronland.info/weblog/2009/05/02/yakshed/#turkishmmap
+
+--
+
+clusterMMap
+    
+    class clusterMMap
+     |  clusterMMap - generate a set of clusters and orphaned points for a list of coordinates
+     |  
+     |  Methods defined here:
+     |  
+     |  __init__(self)
+     |      Create a new clusterMMap object. Just like that!
+     |  
+     |  clusters(self, coords, k=None)
+     |      Return a tuple containing the set clustered (sorted) and orphaned
+     |      points. Specifically:
+     |      
+     |      This starts off as plain old K-Means  clustering where, in the absence
+     |      of a user-defined value of K, the square-root of the number of markers
+     |      is used. After the initial clustering is done the results are filtered
+     |      to prevent any single cluster from containing more than nine points
+     |      (that should probably be configurable). Any that exceed the limit continue
+     |      to be re-crunched (with a K value of 2) until they meet expectations and
+     |      even then they are subject to an additional distance test to ensure that
+     |      outliers don't get grouped with something that's actually too far away.
+     |      That may mean that they end up as "orphan" points but there are hoops to
+     |      try and account for that too.
+     |      
+     |      The clusters are then further simplified by generating a convex hull, or
+     |      more precisely tested to see if there are enough points to create a hull.
+     |      If not, all the points in that clustered are treated as orphans. So, now
+     |      we have a bunch of polylines and orphan points. If the bounding box for
+     |      any one polyline contains the bounding box for another polyline or the
+     |      bounding box of polyline x intersects polyline y (the actual polyline, not
+     |      the bounding box) then the two are merged. Finally, each orphaned point is
+     |      tested to see whether it is contained by any of the bounding boxes for the
+     |      remaining polylines (and added to that cluster if it does).
+     |      
+     |      Coords is a list of lists whose elements are (latitude, longitude).
+
+DATA
+    __author__ = 'Aaron Straup Cope'
+    __copyright__ = 'Copyright (c) 2009 Aaron Straup Cope. BSD license : h...
+    __date__ = '$Date: 2009/05/09 17:05:27 $'
+    __package__ = 'clusterMMap'
+    __url__ = 'http://github.com/straup/py-clusterMMap'
+    __version__ = '0.2'
+
+VERSION
+    0.2
+
+DATE
+    $Date: 2009/05/09 17:05:27 $
+
+AUTHOR
+    Aaron Straup Cope
+
+
