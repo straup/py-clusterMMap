@@ -1,4 +1,9 @@
-# $Id: __init__.py,v 1.5 2009/04/24 05:59:56 asc Exp $
+__package__    = "clusterMMap"
+__version__    = "0.2"
+__author__     = "Aaron Straup Cope"
+__url__        = "http://github.com/straup/py-clusterMMap"
+__date__       = "$Date: 2009/05/09 17:05:27 $"
+__copyright__  = "Copyright (c) 2009 Aaron Straup Cope. BSD license : http://www.modestmaps.com/license.txt"
 
 from cluster import KMeansClustering
 from shapely.geometry import *
@@ -7,31 +12,66 @@ import math
 
 class clusterMMap :
 
+        """clusterMMap - generate a set of clusters and orphaned points for a list of coordinates"""
+
         def __init__ (self) :
+
+                """Create a new clusterMMap object. Just like that!"""
+                
                 pass
         
         #
         # public
         #
         
-        def clusters(self, points, k=None) :
+        def clusters(self, coords, k=None) :
 
-                if not k :
-                        k = int(math.sqrt(len(points)))
+                """
+                Return a tuple containing the set clustered (sorted) and orphaned
+                points. Specifically:
 
-                # print "CLUSTERS %s points, %s k" % (len(points), k)
+                This starts off as plain old K-Means  clustering where, in the absence
+                of a user-defined value of K, the square-root of the number of markers
+                is used. After the initial clustering is done the results are filtered
+                to prevent any single cluster from containing more than nine points
+                (that should probably be configurable). Any that exceed the limit continue
+                to be re-crunched (with a K value of 2) until they meet expectations and
+                even then they are subject to an additional distance test to ensure that
+                outliers don't get grouped with something that's actually too far away.
+                That may mean that they end up as "orphan" points but there are hoops to
+                try and account for that too.
+
+                The clusters are then further simplified by generating a convex hull, or
+                more precisely tested to see if there are enough points to create a hull.
+                If not, all the points in that clustered are treated as orphans. So, now
+                we have a bunch of polylines and orphan points. If the bounding box for
+                any one polyline contains the bounding box for another polyline or the
+                bounding box of polyline x intersects polyline y (the actual polyline, not
+                the bounding box) then the two are merged. Finally, each orphaned point is
+                tested to see whether it is contained by any of the bounding boxes for the
+                remaining polylines (and added to that cluster if it does).
+
+                Coords is a list of lists whose elements are (latitude, longitude).                
+                """
                 
-                (hulls, hpoints, orphans) = self.mk_clusterhull(points, k)
+                if not k :
+                        k = int(math.sqrt(len(coords)))
+
+                # print "CLUSTERS %s coords, %s k" % (len(coords), k)
+                
+                (hulls, hpoints, orphans) = self.mk_clusterhull(coords, k)
 
                 polys = self.hulls2polys(hulls)
                 
-                (sorted, abandoned) = self.visit_family_services(polys, points, orphans)
+                (sorted, abandoned) = self.visit_family_services(polys, coords, orphans)
 
                 return (sorted, abandoned)
 
 
-        ###############################################################
-
+        #
+        # Uh...
+        #
+        
         def paginate (self, clusters, points, items, lookup) :
 
                 bucket = []
@@ -315,13 +355,6 @@ class clusterMMap :
         #
         
         def _myDet (self, p, q, r):
-                """Calc. determinant of a special matrix with three 2D points.
-
-                The sign, "-" or "+", determines the side, right or left,
-                respectivly, on which the point r lies, when measured against
-                a directed vector from p to q.
-                """
-
                 # We use Sarrus' Rule to calculate the determinant.
                 # (could also use the Numeric package...)
                 sum1 = q[0]*r[1] + p[0]*q[1] + r[0]*p[1]
@@ -331,7 +364,6 @@ class clusterMMap :
 
 
         def _isRightTurn (self, (p, q, r)):
-                "Do the vectors pq:qr form a right turn, or not?"
 
                 # assert p != q and q != r and p != r
             
@@ -341,7 +373,6 @@ class clusterMMap :
                         return 0
 
         def _isPointInPolygon (self, r, P):
-                "Is point r inside a given polygon P?"
 
                 # We assume the polygon is a list of points, listed clockwise!
                 for i in xrange(len(P[:-1])):
@@ -353,7 +384,6 @@ class clusterMMap :
 
 
         def _makeRandomData (self, numPoints=10, sqrLength=100, addCornerPoints=0):
-                "Generate a list of random points within a square."
     
                 # Fill a square with random points.
                 min, max = 0, sqrLength
@@ -371,7 +401,6 @@ class clusterMMap :
                 return P
 
         def convexHull (self, P):
-                "Calculate the convex hull of a set of points."
 
                 # Get a local list copy of the points and sort them lexically.
                 points = map(None, P)
@@ -398,4 +427,3 @@ class clusterMMap :
 
                 # Concatenate both halfs and return.
                 return tuple(upper + lower)
-        
